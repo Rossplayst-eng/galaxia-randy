@@ -1,189 +1,42 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Para Randy 💙</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feliz San Valentín ❤️</title>
 
 <style>
-html,body{
+body{
   margin:0;
-  height:100%;
-  background:#000;
   overflow:hidden;
-  font-family:system-ui;
+  background: radial-gradient(circle at center, #1a0033 0%, #000 70%);
+  font-family: 'Segoe UI', sans-serif;
+  color:white;
 }
 
-canvas{display:block}
-
-/* Título estilo neon como el video */
-.title{
+/* Fondo estrellas */
+.stars{
   position:fixed;
-  top:20px;
-  left:0;
-  right:0;
-  text-align:center;
-  font-family:"Pacifico",cursive;
-  font-size:44px;
-  color:#ff6ec7;
-  text-shadow:
-    0 0 10px rgba(255,0,170,.6),
-    0 0 25px rgba(255,0,170,.4),
-    0 0 45px rgba(255,0,170,.2);
-  z-index:5;
-  pointer-events:none;
+  width:100%;
+  height:100%;
+  background:transparent;
 }
-</style>
-</head>
-<body>
-
-<div class="title">Feliz San Valentín ❤️</div>
-<canvas id="c"></canvas>
-
-<script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-
-let W,H;
-function resize(){
-  W = canvas.width = innerWidth;
-  H = canvas.height = innerHeight;
+.star{
+  position:absolute;
+  width:2px;
+  height:2px;
+  background:white;
+  border-radius:50%;
+  opacity:0.8;
+  animation: twinkle 2s infinite alternate;
 }
-resize();
-addEventListener("resize", resize);
-
-const STICKER_SRC = "IMG_4079.png";
-const sticker = new Image();
-sticker.src = STICKER_SRC;
-
-const floorTexts = [
-"Te amo hasta el infinito y más allá 💙",
-"Mi cielo 💫",
-"Mi infinito ♾️",
-"Mi mundo entero 🌍",
-"Mi niño 🧸",
-"Mi rey 👑",
-"Mi todo 💞",
-"Mi desastre fav 😈"
-];
-
-function rnd(a,b){ return a + Math.random()*(b-a); }
-
-let particles=[];
-for(let i=0;i<2000;i++){
-  particles.push({
-    x:rnd(-6,6),
-    z:rnd(1,18),
-    size:rnd(0.5,1.5)
-  });
+@keyframes twinkle{
+  from{opacity:0.2;}
+  to{opacity:1;}
 }
 
-let texts=[];
-for(let i=0;i<30;i++){
-  texts.push({
-    x:rnd(-5,5),
-    z:rnd(2,15),
-    text:floorTexts[Math.floor(Math.random()*floorTexts.length)]
-  });
-}
-
-let time=0;
-
-function project(x,y,z){
-  const fov=400;
-  const scale=fov/(z+5);
-  return {
-    x:W/2 + x*scale,
-    y:H*0.8 + y*scale,
-    scale:scale
-  };
-}
-
-function draw(){
-  time+=0.01;
-  ctx.fillStyle="black";
-  ctx.fillRect(0,0,W,H);
-
-  /* Estrellas */
-  for(let i=0;i<150;i++){
-    ctx.fillStyle="white";
-    ctx.globalAlpha=Math.random()*0.8;
-    ctx.fillRect(Math.random()*W,Math.random()*H,2,2);
-  }
-  ctx.globalAlpha=1;
-
-  const rotation=time*0.2;
-
-  /* Piso galaxia */
-  for(let p of particles){
-    const xr=p.x*Math.cos(rotation)-p.z*Math.sin(rotation);
-    const zr=p.x*Math.sin(rotation)+p.z*Math.cos(rotation);
-
-    const pr=project(xr,0,zr);
-    if(pr.scale<0.1) continue;
-
-    ctx.fillStyle="rgba(255,255,255,0.8)";
-    ctx.fillRect(pr.x,pr.y,p.size*pr.scale*3,p.size*pr.scale*3);
-  }
-
-  /* Textos suaves */
-  ctx.font="16px Pacifico";
-  ctx.fillStyle="rgba(255,120,200,0.8)";
-  for(let t of texts){
-    const xr=t.x*Math.cos(rotation)-t.z*Math.sin(rotation);
-    const zr=t.x*Math.sin(rotation)+t.z*Math.cos(rotation);
-
-    const pr=project(xr,0,zr);
-    if(pr.scale<0.15) continue;
-
-    ctx.save();
-    ctx.translate(pr.x,pr.y);
-    ctx.scale(pr.scale,pr.scale);
-    ctx.fillText(t.text,-50,0);
-    ctx.restore();
-  }
-
-  /* Anillo central brillante */
-  const center=project(0,-0.2,4);
-
-  const grad=ctx.createRadialGradient(center.x,center.y,10,center.x,center.y,200);
-  grad.addColorStop(0,"rgba(255,150,230,0.7)");
-  grad.addColorStop(1,"rgba(0,0,0,0)");
-  ctx.fillStyle=grad;
-  ctx.beginPath();
-  ctx.ellipse(center.x,center.y,200,80,0,0,Math.PI*2);
-  ctx.fill();
-
-  ctx.strokeStyle="rgba(255,0,170,0.7)";
-  ctx.lineWidth=6;
-  ctx.beginPath();
-  ctx.ellipse(center.x,center.y,180,60,0,0,Math.PI*2);
-  ctx.stroke();
-
-  /* Stickers orbitando */
-  if(sticker.complete){
-    for(let i=0;i<10;i++){
-      const angle=time*0.5 + i*(Math.PI*2/10);
-      const x=Math.cos(angle)*2;
-      const z=4 + Math.sin(angle)*1.2;
-
-      const pr=project(x,-0.3,z);
-      const size=60*pr.scale;
-
-      ctx.save();
-      ctx.translate(pr.x,pr.y);
-      ctx.rotate(angle);
-      ctx.drawImage(sticker,-size/2,-size/2,size,size);
-      ctx.restore();
-    }
-  }
-
-  requestAnimationFrame(draw);
-}
-
-draw();
-</script>
-</body>
-</html>
+/* Título */
+h1{
+  position:absolute;
+  top:30px;
+  width:100
