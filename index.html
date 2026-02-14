@@ -4,213 +4,329 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Para Randy 💙</title>
+
+  <!-- Fuente parecida a la del video -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+
   <style>
     html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-    canvas{display:block;width:100vw;height:100vh}
-    .text{
-      position:fixed;left:0;right:0;bottom:28px;z-index:5;
-      display:flex;flex-direction:column;align-items:center;gap:8px;
-      pointer-events:none;text-align:center;padding:0 18px;
-    }
+    canvas{display:block}
+
     .title{
-      color:rgba(255,255,255,.92);
-      font-size:18px;font-weight:700;
-      letter-spacing:.2px;
-      text-shadow:0 2px 18px rgba(0,0,0,.85);
+      position:fixed;top:18px;left:0;right:0;z-index:10;
+      text-align:center;
+      font-family:"Pacifico", cursive;
+      font-size:44px;
+      color:#ff66cc;
+      text-shadow:
+        0 0 10px rgba(255,102,204,.55),
+        0 0 24px rgba(255,0,170,.30),
+        0 0 44px rgba(255,0,170,.18);
+      pointer-events:none;
     }
-    .sub{
-      color:rgba(140,180,255,.92);
-      font-size:13px;font-weight:600;
-      text-shadow:0 2px 18px rgba(0,0,0,.85);
+    .heart{
+      font-family:system-ui;
+      margin-left:10px;
+      filter: drop-shadow(0 0 8px rgba(255,0,0,.35));
+    }
+
+    /* aviso de toque para música (se quita solo) */
+    .hint{
+      position:fixed;bottom:18px;left:0;right:0;z-index:10;
+      text-align:center;
+      font-size:12px;
+      color:rgba(255,255,255,.65);
+      text-shadow:0 2px 12px rgba(0,0,0,.9);
+      pointer-events:none;
     }
   </style>
 </head>
 <body>
-  <canvas id="c"></canvas>
+  <div class="title">Feliz San valentín <span class="heart">❤️</span></div>
+  <div class="hint" id="hint">Toca la pantalla para iniciar la música ✨</div>
 
-  <div class="text">
-    <div class="title">Randy</div>
-    <div class="sub">Te amo hasta el infinito y más allá ♾️💙</div>
-  </div>
+  <!-- (Opcional) Música: sube un mp3 a tu repo como song.mp3 -->
+  <audio id="bgm" src="song.mp3" preload="auto" loop></audio>
+
+  <canvas id="c"></canvas>
 
 <script>
 (() => {
+  const STICKER_SRC = "IMG_4079.png"; // tu sticker subido al repo
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
+  const audio = document.getElementById("bgm");
+  const hint = document.getElementById("hint");
 
-  let W=0,H=0,DPR=1;
+  // Textos en el piso (como en el video)
+  const FLOOR_TEXTS = [
+    "te amo hasta el infinito y más allá 💙",
+    "mi cielo 💫","mi infinito ♾️","mi mundo entero 🌍",
+    "mi niño 🧸","mi chiquito hermoso 🥺","mi rey 👑",
+    "mi todo 🫶","mi desastre fav 😈","hasta el infinito y más allá 🪐"
+  ];
+
+  // ======= tamaño / DPR =======
+  let W,H,DPR;
   function resize(){
     DPR = Math.max(1, Math.min(2, devicePixelRatio || 1));
-    W = canvas.width  = Math.floor(innerWidth * DPR);
-    H = canvas.height = Math.floor(innerHeight * DPR);
+    W = canvas.width = Math.floor(innerWidth*DPR);
+    H = canvas.height = Math.floor(innerHeight*DPR);
+    canvas.style.width = innerWidth+"px";
+    canvas.style.height = innerHeight+"px";
   }
   addEventListener("resize", resize);
   resize();
 
-  const rnd = (a,b)=>a+Math.random()*(b-a);
+  const rnd=(a,b)=>a+Math.random()*(b-a);
 
-  // Fondo de estrellas (suave, no cargado)
-  const STAR_COUNT = 420;
-  const stars = Array.from({length: STAR_COUNT}, () => ({
-    x: Math.random(),
-    y: Math.random(),
-    r: rnd(0.6, 1.6),
-    a: rnd(0.08, 0.45),
-    ph: rnd(0, Math.PI*2),
-    sp: rnd(0.6, 1.2)
+  // ======= Estrellas del cielo =======
+  const SKY_STARS = Array.from({length: 550}, ()=>({
+    x: Math.random(), y: Math.random(),
+    r: rnd(0.6,1.8), a: rnd(0.08,0.55), ph: rnd(0,Math.PI*2)
   }));
 
-  // ====== Constelación: "R" + corazón ======
-  // Está hecha con puntos (estrellas grandes) y líneas finas.
-  // Coordenadas relativas en un cuadro [-1..1] que luego se escala al centro.
-  function makeRShape(){
-    // Una R simple: palo + curva + pierna diagonal
+  // ======= Piso galaxia (partículas 3D) =======
+  // Partículas en plano XZ que se proyectan con perspectiva, creando el “piso”
+  const floor = [];
+  for(let i=0;i<2800;i++){
+    floor.push({
+      x: rnd(-6,6),
+      z: rnd(0.2,18),
+      s: rnd(0.6,1.6),
+      a: rnd(0.08,0.45)
+    });
+  }
+
+  // ======= Textos colocados en el piso =======
+  const floorTexts = [];
+  for(let i=0;i<42;i++){
+    floorTexts.push({
+      x: rnd(-5.2,5.2),
+      z: rnd(1.0,15.5),
+      txt: FLOOR_TEXTS[(Math.random()*FLOOR_TEXTS.length)|0]
+    });
+  }
+
+  // ======= Stickers orbitando (en el piso) =======
+  const stickerImg = new Image();
+  stickerImg.src = STICKER_SRC;
+  let stickerReady=false;
+  stickerImg.onload=()=>stickerReady=true;
+
+  // Ponemos varios stickers alrededor del anillo central
+  const ORBIT_COUNT = 14;
+  const orbitItems = Array.from({length: ORBIT_COUNT}, (_,i)=>({
+    ang: (i/ORBIT_COUNT) * Math.PI*2,
+    r: rnd(1.55,2.15),
+    zLift: rnd(0.0,0.25),
+    size: rnd(42,64)
+  }));
+
+  // ======= Proyección 3D simple =======
+  function project(x,y,z){
+    // cámara
+    const camY = 2.6;
+    const camZ = -2.2;
+
+    // mover mundo a cámara
+    const dz = (z - camZ);
+    const dy = (y - camY);
+
+    // fov
+    const fov = 520*DPR;
+    const scale = fov / (dz*3.2);
+
+    // centro de pantalla
+    const cx = W*0.5;
+    const cy = H*0.78;
+
+    return {
+      x: cx + x*scale,
+      y: cy + dy*scale,
+      s: scale
+    };
+  }
+
+  // ======= Anillo central (glow) =======
+  function drawRing(t){
+    const ringY = 0.0;
+    const ringZ = 3.2; // “al frente”
+    const ringR = 2.25;
+
+    // rotación lenta del ring
+    const rot = t*0.12;
+
+    // dibujar elipses proyectadas
+    const steps = 120;
     const pts = [];
-    // palo vertical
-    for(let i=0;i<10;i++) pts.push([-0.55, -0.65 + i*(1.3/9)]);
-    // curva superior (semi-oval)
-    pts.push([-0.25, -0.65]);
-    pts.push([-0.05, -0.55]);
-    pts.push([ 0.05, -0.35]);
-    pts.push([-0.05, -0.15]);
-    pts.push([-0.25, -0.05]);
-    pts.push([-0.55, -0.05]);
-    // pierna diagonal
-    pts.push([-0.35,  0.10]);
-    pts.push([-0.15,  0.35]);
-    pts.push([ 0.05,  0.65]);
-    return pts;
-  }
+    for(let i=0;i<=steps;i++){
+      const a = (i/steps)*Math.PI*2;
+      const x = Math.cos(a)*ringR;
+      const z = ringZ + Math.sin(a)*ringR*0.55;
+      // rotación en yaw (mueve el anillo)
+      const xr = x*Math.cos(rot) - z*Math.sin(rot);
+      const zr = x*Math.sin(rot) + z*Math.cos(rot);
 
-  function makeHeartShape(){
-    // Corazón minimal con 12 puntos
-    return [
-      [0.35,-0.10],[0.52,-0.22],[0.68,-0.14],[0.72,0.02],
-      [0.62,0.18],[0.48,0.30],[0.35,0.42],[0.22,0.30],
-      [0.08,0.18],[-0.02,0.02],[0.02,-0.14],[0.18,-0.22]
-    ];
-  }
-
-  const R_POINTS = makeRShape();
-  const HEART_POINTS = makeHeartShape();
-
-  // Convertimos esos puntos a estrellas “constellation”
-  function buildConstellation(){
-    const cx = W/2;
-    const cy = H*0.46;
-
-    const scale = Math.min(W,H) * 0.22; // tamaño general (minimal)
-    const gap = Math.min(W,H) * 0.12;   // distancia entre R y corazón
-
-    const pts = [];
-
-    // R a la izquierda
-    for(const [x,y] of R_POINTS){
-      pts.push({
-        x: cx + (x*scale) - gap,
-        y: cy + (y*scale),
-        r: rnd(1.6, 2.4)*DPR,
-        tw: rnd(0, Math.PI*2),
-        a: rnd(0.55, 0.95),
-        hue: "rgba(255,255,255,"
-      });
+      const p = project(xr, ringY, zr);
+      pts.push(p);
     }
 
-    // Corazón a la derecha (con un toque azul)
-    for(const [x,y] of HEART_POINTS){
-      pts.push({
-        x: cx + (x*scale) + gap,
-        y: cy + (y*scale),
-        r: rnd(1.6, 2.6)*DPR,
-        tw: rnd(0, Math.PI*2),
-        a: rnd(0.60, 0.98),
-        hue: "rgba(140,180,255,"
-      });
-    }
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineWidth = 10*DPR;
+    ctx.strokeStyle = "rgba(255,60,190,0.28)";
+    ctx.shadowColor = "rgba(255,60,190,0.75)";
+    ctx.shadowBlur = 28*DPR;
 
-    // Definimos conexiones (líneas) por cercanía (pero pocas)
-    const edges = [];
-    const maxDist = scale*0.35;
-    for(let i=0;i<pts.length;i++){
-      for(let j=i+1;j<pts.length;j++){
-        const dx = pts[i].x-pts[j].x;
-        const dy = pts[i].y-pts[j].y;
-        const d = Math.hypot(dx,dy);
-        if(d < maxDist){
-          // No saturar: solo algunas líneas
-          if(Math.random() < 0.22){
-            edges.push([i,j, d]);
-          }
-        }
-      }
-    }
-    return {pts, edges};
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(const p of pts) ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+
+    // anillo fino encima
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 4*DPR;
+    ctx.strokeStyle = "rgba(255,170,240,0.70)";
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(const p of pts) ctx.lineTo(p.x,p.y);
+    ctx.stroke();
+
+    // glow central (como “portal”)
+    const center = project(0, -0.15, ringZ);
+    const g = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, 180*DPR);
+    g.addColorStop(0,"rgba(255,170,240,0.65)");
+    g.addColorStop(0.35,"rgba(255,60,190,0.22)");
+    g.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(center.x, center.y, 220*DPR, 90*DPR, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
   }
 
-  let constellation = buildConstellation();
-  addEventListener("resize", () => { resize(); constellation = buildConstellation(); });
+  // ======= Dibujo principal =======
+  let t=0;
+  function frame(){
+    t += 0.010; // velocidad general (lento)
 
-  let t = 0;
-
-  function draw(){
-    t += 0.012;
-
-    // Fondo (suave)
+    // limpiar
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillStyle = "rgba(0,0,0,0.42)";
     ctx.fillRect(0,0,W,H);
 
-    // Estrellas de fondo
-    for(const s of stars){
-      const tw = (Math.sin(t*s.sp + s.ph)*0.5+0.5);
-      ctx.globalAlpha = s.a*(0.35+tw*0.8);
-      ctx.fillStyle = "rgba(255,255,255,1)";
+    // cielo (stars suaves)
+    for(const s of SKY_STARS){
+      const tw = (Math.sin(t*2 + s.ph)*0.5+0.5);
+      ctx.globalAlpha = s.a*(0.35+tw*0.85);
+      ctx.fillStyle="white";
       ctx.fillRect(s.x*W, s.y*H, s.r*DPR, s.r*DPR);
     }
     ctx.globalAlpha = 1;
 
-    // Líneas constelación (muy finas, pocas)
-    ctx.lineWidth = 1*DPR;
-    for(const [i,j,d] of constellation.edges){
-      const a = 0.10 + 0.22*(1 - d/(Math.min(W,H)*0.22));
-      ctx.strokeStyle = `rgba(140,180,255,${a})`;
-      ctx.beginPath();
-      ctx.moveTo(constellation.pts[i].x, constellation.pts[i].y);
-      ctx.lineTo(constellation.pts[j].x, constellation.pts[j].y);
-      ctx.stroke();
-    }
+    // rotación del mundo (piso)
+    const yaw = t*0.20;
 
-    // Estrellas de la constelación (brillan suave)
-    for(const p of constellation.pts){
-      const tw = (Math.sin(t*1.2 + p.tw)*0.5+0.5);
-      const alpha = p.a*(0.55 + tw*0.45);
+    // piso galaxia (partículas)
+    for(const p of floor){
+      const x0 = p.x;
+      const z0 = p.z;
 
-      // glow suave
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = alpha*0.22;
-      ctx.fillStyle = p.hue + "1)";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r*4.2, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
+      // rotar piso
+      const xr = x0*Math.cos(yaw) - z0*Math.sin(yaw);
+      const zr = x0*Math.sin(yaw) + z0*Math.cos(yaw);
 
-      // núcleo
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = p.hue + "1)";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      ctx.fill();
+      // proyectar (y = 0 piso)
+      const pr = project(xr, 0, zr);
+
+      // solo dibujar lo visible
+      if(pr.s < 0.03) continue;
+
+      ctx.globalAlpha = p.a;
+      // blanco y un poco rosita suave
+      if(Math.random() < 0.06){
+        ctx.fillStyle = "rgba(255,170,240,0.85)";
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+      }
+      const size = p.s * pr.s * 12;
+      ctx.fillRect(pr.x, pr.y, size, size);
     }
     ctx.globalAlpha = 1;
 
-    requestAnimationFrame(draw);
+    // Textos en el piso (sin saturar)
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = "rgba(255,140,220,0.82)";
+    ctx.shadowColor = "rgba(255,60,190,0.25)";
+    ctx.shadowBlur = 8*DPR;
+    ctx.font = `${14*DPR}px "Pacifico", cursive`;
+    for(const ft of floorTexts){
+      const xr = ft.x*Math.cos(yaw) - ft.z*Math.sin(yaw);
+      const zr = ft.x*Math.sin(yaw) + ft.z*Math.cos(yaw);
+      const pr = project(xr, 0, zr);
+      if(pr.s < 0.045) continue;
+      // escala del texto según profundidad (suave)
+      ctx.save();
+      ctx.translate(pr.x, pr.y);
+      const sc = Math.max(0.55, Math.min(1.25, pr.s*10));
+      ctx.scale(sc, sc);
+      ctx.fillText(ft.txt, -40*DPR, -8*DPR);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Anillo central
+    drawRing(t);
+
+    // Stickers orbitando alrededor del anillo (como en el video)
+    if(stickerReady){
+      const ringZ = 3.2;
+      const baseRot = t*0.30; // rotación stickers un poquito más marcada
+      for(const it of orbitItems){
+        const a = it.ang + baseRot;
+        const x = Math.cos(a)*it.r;
+        const z = ringZ + Math.sin(a)*it.r*0.62;
+        const y = -0.20 - it.zLift;
+
+        // también rotamos el mundo
+        const xr = x*Math.cos(yaw) - z*Math.sin(yaw);
+        const zr = x*Math.sin(yaw) + z*Math.cos(yaw);
+
+        const pr = project(xr, y, zr);
+        if(pr.s < 0.04) continue;
+
+        const sz = it.size * pr.s * 12;
+        ctx.save();
+        ctx.globalAlpha = 0.95;
+        ctx.translate(pr.x, pr.y);
+        ctx.rotate(a*0.35);
+        ctx.drawImage(stickerImg, -sz/2, -sz/2, sz, sz);
+        ctx.restore();
+      }
+    }
+
+    requestAnimationFrame(frame);
   }
 
-  // Inicio
-  ctx.fillStyle = "black";
-  ctx.fillRect(0,0,W,H);
-  draw();
+  // ======= Música con 1 toque (iPhone necesita gesto) =======
+  function tryPlay(){
+    if(!audio || !audio.src) return;
+    audio.volume = 0.9;
+    audio.play().then(()=>{
+      if(hint) hint.style.display="none";
+    }).catch(()=>{
+      // si falla, no hacemos nada
+    });
+  }
+  addEventListener("pointerdown", tryPlay, {once:false, passive:true});
+  addEventListener("touchstart", tryPlay, {once:false, passive:true});
+
+  frame();
 })();
 </script>
 </body>
