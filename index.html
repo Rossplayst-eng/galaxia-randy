@@ -162,7 +162,7 @@
   // ===== DRAW HELPERS =====
   function drawGlowEllipse(cx, cy, rx, ry, color, alpha){
     ctx.save();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = clamp(pr.s*1.1, 0.15, 0.85);
     const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, Math.max(rx, ry)*1.25);
     g.addColorStop(0, color);
     g.addColorStop(1, "rgba(0,0,0,0)");
@@ -328,8 +328,10 @@
         const pr = project(it.x, it.y, it.z);
         if(pr.s < 0.08) continue;
 
-        const base = 92 * pr.s * it.s.scale;
-        const rotSticker = (it.a * 0.5) + time*it.s.spin;
+        let base = 70 * pr.s * it.s.scale;   // tamaño normal
+base = Math.max(14, Math.min(base, 72)); // límite para que NO se haga gigante
+
+       const rotSticker = (it.a * 0.5) + time*it.s.spin;
 
         ctx.save();
         ctx.globalAlpha = clamp(pr.s*1.3, 0.25, 0.95);
