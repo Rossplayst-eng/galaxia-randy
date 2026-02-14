@@ -1,333 +1,189 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Para Randy 💙</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Para Randy 💙</title>
 
-  <!-- Fuente parecida a la del video -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
 
-  <style>
-    html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-    canvas{display:block}
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  background:#000;
+  overflow:hidden;
+  font-family:system-ui;
+}
 
-    .title{
-      position:fixed;top:18px;left:0;right:0;z-index:10;
-      text-align:center;
-      font-family:"Pacifico", cursive;
-      font-size:44px;
-      color:#ff66cc;
-      text-shadow:
-        0 0 10px rgba(255,102,204,.55),
-        0 0 24px rgba(255,0,170,.30),
-        0 0 44px rgba(255,0,170,.18);
-      pointer-events:none;
-    }
-    .heart{
-      font-family:system-ui;
-      margin-left:10px;
-      filter: drop-shadow(0 0 8px rgba(255,0,0,.35));
-    }
+canvas{display:block}
 
-    /* aviso de toque para música (se quita solo) */
-    .hint{
-      position:fixed;bottom:18px;left:0;right:0;z-index:10;
-      text-align:center;
-      font-size:12px;
-      color:rgba(255,255,255,.65);
-      text-shadow:0 2px 12px rgba(0,0,0,.9);
-      pointer-events:none;
-    }
-  </style>
+/* Título estilo neon como el video */
+.title{
+  position:fixed;
+  top:20px;
+  left:0;
+  right:0;
+  text-align:center;
+  font-family:"Pacifico",cursive;
+  font-size:44px;
+  color:#ff6ec7;
+  text-shadow:
+    0 0 10px rgba(255,0,170,.6),
+    0 0 25px rgba(255,0,170,.4),
+    0 0 45px rgba(255,0,170,.2);
+  z-index:5;
+  pointer-events:none;
+}
+</style>
 </head>
 <body>
-  <div class="title">Feliz San valentín <span class="heart">❤️</span></div>
-  <div class="hint" id="hint">Toca la pantalla para iniciar la música ✨</div>
 
-  <!-- (Opcional) Música: sube un mp3 a tu repo como song.mp3 -->
-  <audio id="bgm" src="song.mp3" preload="auto" loop></audio>
-
-  <canvas id="c"></canvas>
+<div class="title">Feliz San Valentín ❤️</div>
+<canvas id="c"></canvas>
 
 <script>
-(() => {
-  const STICKER_SRC = "IMG_4079.png"; // tu sticker subido al repo
-  const canvas = document.getElementById("c");
-  const ctx = canvas.getContext("2d");
-  const audio = document.getElementById("bgm");
-  const hint = document.getElementById("hint");
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
 
-  // Textos en el piso (como en el video)
-  const FLOOR_TEXTS = [
-    "te amo hasta el infinito y más allá 💙",
-    "mi cielo 💫","mi infinito ♾️","mi mundo entero 🌍",
-    "mi niño 🧸","mi chiquito hermoso 🥺","mi rey 👑",
-    "mi todo 🫶","mi desastre fav 😈","hasta el infinito y más allá 🪐"
-  ];
+let W,H;
+function resize(){
+  W = canvas.width = innerWidth;
+  H = canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
 
-  // ======= tamaño / DPR =======
-  let W,H,DPR;
-  function resize(){
-    DPR = Math.max(1, Math.min(2, devicePixelRatio || 1));
-    W = canvas.width = Math.floor(innerWidth*DPR);
-    H = canvas.height = Math.floor(innerHeight*DPR);
-    canvas.style.width = innerWidth+"px";
-    canvas.style.height = innerHeight+"px";
+const STICKER_SRC = "IMG_4079.png";
+const sticker = new Image();
+sticker.src = STICKER_SRC;
+
+const floorTexts = [
+"Te amo hasta el infinito y más allá 💙",
+"Mi cielo 💫",
+"Mi infinito ♾️",
+"Mi mundo entero 🌍",
+"Mi niño 🧸",
+"Mi rey 👑",
+"Mi todo 💞",
+"Mi desastre fav 😈"
+];
+
+function rnd(a,b){ return a + Math.random()*(b-a); }
+
+let particles=[];
+for(let i=0;i<2000;i++){
+  particles.push({
+    x:rnd(-6,6),
+    z:rnd(1,18),
+    size:rnd(0.5,1.5)
+  });
+}
+
+let texts=[];
+for(let i=0;i<30;i++){
+  texts.push({
+    x:rnd(-5,5),
+    z:rnd(2,15),
+    text:floorTexts[Math.floor(Math.random()*floorTexts.length)]
+  });
+}
+
+let time=0;
+
+function project(x,y,z){
+  const fov=400;
+  const scale=fov/(z+5);
+  return {
+    x:W/2 + x*scale,
+    y:H*0.8 + y*scale,
+    scale:scale
+  };
+}
+
+function draw(){
+  time+=0.01;
+  ctx.fillStyle="black";
+  ctx.fillRect(0,0,W,H);
+
+  /* Estrellas */
+  for(let i=0;i<150;i++){
+    ctx.fillStyle="white";
+    ctx.globalAlpha=Math.random()*0.8;
+    ctx.fillRect(Math.random()*W,Math.random()*H,2,2);
   }
-  addEventListener("resize", resize);
-  resize();
+  ctx.globalAlpha=1;
 
-  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const rotation=time*0.2;
 
-  // ======= Estrellas del cielo =======
-  const SKY_STARS = Array.from({length: 550}, ()=>({
-    x: Math.random(), y: Math.random(),
-    r: rnd(0.6,1.8), a: rnd(0.08,0.55), ph: rnd(0,Math.PI*2)
-  }));
+  /* Piso galaxia */
+  for(let p of particles){
+    const xr=p.x*Math.cos(rotation)-p.z*Math.sin(rotation);
+    const zr=p.x*Math.sin(rotation)+p.z*Math.cos(rotation);
 
-  // ======= Piso galaxia (partículas 3D) =======
-  // Partículas en plano XZ que se proyectan con perspectiva, creando el “piso”
-  const floor = [];
-  for(let i=0;i<2800;i++){
-    floor.push({
-      x: rnd(-6,6),
-      z: rnd(0.2,18),
-      s: rnd(0.6,1.6),
-      a: rnd(0.08,0.45)
-    });
-  }
+    const pr=project(xr,0,zr);
+    if(pr.scale<0.1) continue;
 
-  // ======= Textos colocados en el piso =======
-  const floorTexts = [];
-  for(let i=0;i<42;i++){
-    floorTexts.push({
-      x: rnd(-5.2,5.2),
-      z: rnd(1.0,15.5),
-      txt: FLOOR_TEXTS[(Math.random()*FLOOR_TEXTS.length)|0]
-    });
-  }
-
-  // ======= Stickers orbitando (en el piso) =======
-  const stickerImg = new Image();
-  stickerImg.src = STICKER_SRC;
-  let stickerReady=false;
-  stickerImg.onload=()=>stickerReady=true;
-
-  // Ponemos varios stickers alrededor del anillo central
-  const ORBIT_COUNT = 14;
-  const orbitItems = Array.from({length: ORBIT_COUNT}, (_,i)=>({
-    ang: (i/ORBIT_COUNT) * Math.PI*2,
-    r: rnd(1.55,2.15),
-    zLift: rnd(0.0,0.25),
-    size: rnd(42,64)
-  }));
-
-  // ======= Proyección 3D simple =======
-  function project(x,y,z){
-    // cámara
-    const camY = 2.6;
-    const camZ = -2.2;
-
-    // mover mundo a cámara
-    const dz = (z - camZ);
-    const dy = (y - camY);
-
-    // fov
-    const fov = 520*DPR;
-    const scale = fov / (dz*3.2);
-
-    // centro de pantalla
-    const cx = W*0.5;
-    const cy = H*0.78;
-
-    return {
-      x: cx + x*scale,
-      y: cy + dy*scale,
-      s: scale
-    };
+    ctx.fillStyle="rgba(255,255,255,0.8)";
+    ctx.fillRect(pr.x,pr.y,p.size*pr.scale*3,p.size*pr.scale*3);
   }
 
-  // ======= Anillo central (glow) =======
-  function drawRing(t){
-    const ringY = 0.0;
-    const ringZ = 3.2; // “al frente”
-    const ringR = 2.25;
+  /* Textos suaves */
+  ctx.font="16px Pacifico";
+  ctx.fillStyle="rgba(255,120,200,0.8)";
+  for(let t of texts){
+    const xr=t.x*Math.cos(rotation)-t.z*Math.sin(rotation);
+    const zr=t.x*Math.sin(rotation)+t.z*Math.cos(rotation);
 
-    // rotación lenta del ring
-    const rot = t*0.12;
-
-    // dibujar elipses proyectadas
-    const steps = 120;
-    const pts = [];
-    for(let i=0;i<=steps;i++){
-      const a = (i/steps)*Math.PI*2;
-      const x = Math.cos(a)*ringR;
-      const z = ringZ + Math.sin(a)*ringR*0.55;
-      // rotación en yaw (mueve el anillo)
-      const xr = x*Math.cos(rot) - z*Math.sin(rot);
-      const zr = x*Math.sin(rot) + z*Math.cos(rot);
-
-      const p = project(xr, ringY, zr);
-      pts.push(p);
-    }
+    const pr=project(xr,0,zr);
+    if(pr.scale<0.15) continue;
 
     ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.lineWidth = 10*DPR;
-    ctx.strokeStyle = "rgba(255,60,190,0.28)";
-    ctx.shadowColor = "rgba(255,60,190,0.75)";
-    ctx.shadowBlur = 28*DPR;
-
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for(const p of pts) ctx.lineTo(p.x,p.y);
-    ctx.stroke();
-
-    // anillo fino encima
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 4*DPR;
-    ctx.strokeStyle = "rgba(255,170,240,0.70)";
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for(const p of pts) ctx.lineTo(p.x,p.y);
-    ctx.stroke();
-
-    // glow central (como “portal”)
-    const center = project(0, -0.15, ringZ);
-    const g = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, 180*DPR);
-    g.addColorStop(0,"rgba(255,170,240,0.65)");
-    g.addColorStop(0.35,"rgba(255,60,190,0.22)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(center.x, center.y, 220*DPR, 90*DPR, 0, 0, Math.PI*2);
-    ctx.fill();
-
+    ctx.translate(pr.x,pr.y);
+    ctx.scale(pr.scale,pr.scale);
+    ctx.fillText(t.text,-50,0);
     ctx.restore();
   }
 
-  // ======= Dibujo principal =======
-  let t=0;
-  function frame(){
-    t += 0.010; // velocidad general (lento)
+  /* Anillo central brillante */
+  const center=project(0,-0.2,4);
 
-    // limpiar
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "rgba(0,0,0,0.42)";
-    ctx.fillRect(0,0,W,H);
+  const grad=ctx.createRadialGradient(center.x,center.y,10,center.x,center.y,200);
+  grad.addColorStop(0,"rgba(255,150,230,0.7)");
+  grad.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.ellipse(center.x,center.y,200,80,0,0,Math.PI*2);
+  ctx.fill();
 
-    // cielo (stars suaves)
-    for(const s of SKY_STARS){
-      const tw = (Math.sin(t*2 + s.ph)*0.5+0.5);
-      ctx.globalAlpha = s.a*(0.35+tw*0.85);
-      ctx.fillStyle="white";
-      ctx.fillRect(s.x*W, s.y*H, s.r*DPR, s.r*DPR);
-    }
-    ctx.globalAlpha = 1;
+  ctx.strokeStyle="rgba(255,0,170,0.7)";
+  ctx.lineWidth=6;
+  ctx.beginPath();
+  ctx.ellipse(center.x,center.y,180,60,0,0,Math.PI*2);
+  ctx.stroke();
 
-    // rotación del mundo (piso)
-    const yaw = t*0.20;
+  /* Stickers orbitando */
+  if(sticker.complete){
+    for(let i=0;i<10;i++){
+      const angle=time*0.5 + i*(Math.PI*2/10);
+      const x=Math.cos(angle)*2;
+      const z=4 + Math.sin(angle)*1.2;
 
-    // piso galaxia (partículas)
-    for(const p of floor){
-      const x0 = p.x;
-      const z0 = p.z;
+      const pr=project(x,-0.3,z);
+      const size=60*pr.scale;
 
-      // rotar piso
-      const xr = x0*Math.cos(yaw) - z0*Math.sin(yaw);
-      const zr = x0*Math.sin(yaw) + z0*Math.cos(yaw);
-
-      // proyectar (y = 0 piso)
-      const pr = project(xr, 0, zr);
-
-      // solo dibujar lo visible
-      if(pr.s < 0.03) continue;
-
-      ctx.globalAlpha = p.a;
-      // blanco y un poco rosita suave
-      if(Math.random() < 0.06){
-        ctx.fillStyle = "rgba(255,170,240,0.85)";
-      } else {
-        ctx.fillStyle = "rgba(255,255,255,0.9)";
-      }
-      const size = p.s * pr.s * 12;
-      ctx.fillRect(pr.x, pr.y, size, size);
-    }
-    ctx.globalAlpha = 1;
-
-    // Textos en el piso (sin saturar)
-    ctx.save();
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = "rgba(255,140,220,0.82)";
-    ctx.shadowColor = "rgba(255,60,190,0.25)";
-    ctx.shadowBlur = 8*DPR;
-    ctx.font = `${14*DPR}px "Pacifico", cursive`;
-    for(const ft of floorTexts){
-      const xr = ft.x*Math.cos(yaw) - ft.z*Math.sin(yaw);
-      const zr = ft.x*Math.sin(yaw) + ft.z*Math.cos(yaw);
-      const pr = project(xr, 0, zr);
-      if(pr.s < 0.045) continue;
-      // escala del texto según profundidad (suave)
       ctx.save();
-      ctx.translate(pr.x, pr.y);
-      const sc = Math.max(0.55, Math.min(1.25, pr.s*10));
-      ctx.scale(sc, sc);
-      ctx.fillText(ft.txt, -40*DPR, -8*DPR);
+      ctx.translate(pr.x,pr.y);
+      ctx.rotate(angle);
+      ctx.drawImage(sticker,-size/2,-size/2,size,size);
       ctx.restore();
     }
-    ctx.restore();
-
-    // Anillo central
-    drawRing(t);
-
-    // Stickers orbitando alrededor del anillo (como en el video)
-    if(stickerReady){
-      const ringZ = 3.2;
-      const baseRot = t*0.30; // rotación stickers un poquito más marcada
-      for(const it of orbitItems){
-        const a = it.ang + baseRot;
-        const x = Math.cos(a)*it.r;
-        const z = ringZ + Math.sin(a)*it.r*0.62;
-        const y = -0.20 - it.zLift;
-
-        // también rotamos el mundo
-        const xr = x*Math.cos(yaw) - z*Math.sin(yaw);
-        const zr = x*Math.sin(yaw) + z*Math.cos(yaw);
-
-        const pr = project(xr, y, zr);
-        if(pr.s < 0.04) continue;
-
-        const sz = it.size * pr.s * 12;
-        ctx.save();
-        ctx.globalAlpha = 0.95;
-        ctx.translate(pr.x, pr.y);
-        ctx.rotate(a*0.35);
-        ctx.drawImage(stickerImg, -sz/2, -sz/2, sz, sz);
-        ctx.restore();
-      }
-    }
-
-    requestAnimationFrame(frame);
   }
 
-  // ======= Música con 1 toque (iPhone necesita gesto) =======
-  function tryPlay(){
-    if(!audio || !audio.src) return;
-    audio.volume = 0.9;
-    audio.play().then(()=>{
-      if(hint) hint.style.display="none";
-    }).catch(()=>{
-      // si falla, no hacemos nada
-    });
-  }
-  addEventListener("pointerdown", tryPlay, {once:false, passive:true});
-  addEventListener("touchstart", tryPlay, {once:false, passive:true});
+  requestAnimationFrame(draw);
+}
 
-  frame();
-})();
+draw();
 </script>
 </body>
 </html>
