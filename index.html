@@ -69,7 +69,7 @@ let t = 0;
 
 // ===== Parámetros anti-saturación =====
 const BG_CLEAR_ALPHA = 0.55;     // 1 = borra total; 0.5 = deja un poquito de suavidad sin manchar
-const NEBULA_ALPHA   = 0.10;     // nebulosa suave
+const NEBULA_ALPHA   = 0.8;     // nebulosa suave
 const RING_ALPHA     = 0.78;     // anillo neón controlado
 const TEXT_ALPHA     = 0.78;     // textos orbitando legibles
 const FLOOR_TEXT_ALPHA = 0.70;   // textos en piso legibles
@@ -114,7 +114,7 @@ function rebuild(){
   const baseR2 = Math.min(W,H)*0.33;
 
   // Stickers orbitando (menos para que no se amontonen)
-  const orbitStickerCount = 10;
+  const orbitStickerCount = 8;
   for(let i=0;i<orbitStickerCount;i++){
     orbitStickers.push({
       r: rnd(baseR1, baseR2),
@@ -151,7 +151,7 @@ function rebuild(){
   }
 
   // Piso 3D (POCO para que no se sature)
-  const count = 42;
+  const count = 30;
   for(let i=0;i<count;i++){
     floorItems.push({
       x: rnd(-1.20,1.20),
