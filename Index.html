@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Para Randy 💙</title>
+  <style>
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto; }
+    canvas { display:block; }
+    .top {
+      position: fixed; top: 18px; left: 0; right: 0;
+      display:flex; justify-content:center; pointer-events:none;
+      color: rgba(255,255,255,.95);
+      text-shadow: 0 2px 12px rgba(0,0,0,.75);
+      font-size: 18px;
+      padding: 0 14px;
+      text-align:center;
+    }
+    .music {
+      position: fixed; top: 16px; right: 14px;
+      z-index: 10;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.18);
+      color: rgba(255,255,255,.9);
+      padding: 10px 12px;
+      border-radius: 999px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .music:active { transform: scale(.98); }
+    .hint {
+      position: fixed; bottom: 18px; left: 0; right: 0;
+      display:flex; justify-content:center; pointer-events:none;
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <button class="music" id="musicBtn">Música 🎶</button>
+  <div class="top" id="msg"></div>
+  <div class="hint">toca la pantalla ✨</div>
+  <canvas id="c"></canvas>
+
+  <script>
+    // ===== PERSONALIZA AQUÍ =====
+    const NOMBRE = "Randy";
+    const MENSAJE_PRINCIPAL = "Te amo hasta el infinito y más allá 💙✨";
+
+    // Corazón azul brillante (tipo neón)
+    const COLOR_CORAZON = "#2f8dff";
+
+    // Apodos + emojis (como pediste)
+    const APODOS = [
+      "Mi cielo 💫",
+      "Mi infinito ♾️💙",
+      "Mi mundo entero 🌍💙",
+      "Mi niño 🧸💙",
+      "Mi chiquito hermoso 🥺💙",
+      "Mi rey 👑💙",
+      "Mi todo 🫶💙",
+      "Hasta el infinito y más allá 🚀♾️",
+      "Mi desastre fav 😈💙"
+    ];
+
+    // Links de música (elige 1 o deja ambos)
+    // Nota: en iPhone/iPad casi siempre exige tocar para abrir/reproducir.
+    const MUSICA_YOUTUBE = "https://www.youtube.com/results?search_query=Die+With+A+Smile+Bruno+Mars+Lady+Gaga";
+    const MUSICA_SPOTIFY = "https://open.spotify.com/search/Die%20With%20A%20Smile%20Bruno%20Mars%20Lady%20Gaga";
+    // ===========================
+
+    // Mensaje arriba
+    document.getElementById("msg").textContent = `${MENSAJE_PRINCIPAL} — Para ${NOMBRE}`;
+
+    // Botón música: abre YouTube (o Spotify)
+    document.getElementById("musicBtn").addEventListener("click", () => {
+      // Cambia MUSICA_YOUTUBE por MUSICA_SPOTIFY si prefieres.
+      window.open(MUSICA_YOUTUBE, "_blank");
+    });
+
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    let W, H, DPR;
+
+    function resize(){
+      DPR = Math.max(1, Math.min(2, devicePixelRatio || 1));
+      W = canvas.width = Math.floor(innerWidth * DPR);
+      H = canvas.height = Math.floor(innerHeight * DPR);
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+    }
+    addEventListener("resize", resize); resize();
+
+    // Estrellas con profundidad
+    const stars = Array.from({length: 1000}, () => ({
+      x: Math.random(), y: Math.random(),
+      z: Math.random(), s: 0.35 + Math.random()*1.7
+    }));
+
+    // Emojis flotando (para darle vibra como el ejemplo)
+    const floaties = ["💙","✨","💫","⭐️","🌙","🫶","😽","🦋","🌸","💜","😈","👑","🚀","♾️"];
+    const emojis = Array.from({length: 22}, () => ({
+      ch: floaties[(Math.random()*floaties.length)|0],
+      x: Math.random(), y: Math.random(),
+      vy: 0.0006 + Math.random()*0.0012,
+      s: 12 + Math.random()*18,
+      a: 0.35 + Math.random()*0.35
+    }));
+
+    function heartPoints(cx, cy, r, n=220){
+      const pts = [];
+      for(let i=0;i<n;i++){
+        const t = (i/n) * Math.PI*2;
+        const x = 16*Math.pow(Math.sin(t),3);
+        const y = 13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+        pts.push({ x: cx + (x/18)*r, y: cy - (y/18)*r });
+      }
+      return pts;
+    }
+
+    let burst = 0;
+    addEventListener("pointerdown", () => burst = 1);
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+
+      // Fondo tipo nebulosa
+      const g = ctx.createRadialGradient(W*0.5,H*0.45,0,W*0.5,H*0.45,Math.max(W,H)*0.80);
+      g.addColorStop(0,"rgba(80,40,140,0.14)");
+      g.addColorStop(0.4,"rgba(20,40,90,0.10)");
+      g.addColorStop(1,"rgba(0,0,0,1)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,W,H);
+
+      // Estrellas moviéndose hacia ti
+      ctx.save();
+      ctx.globalAlpha = 0.92;
+      for(const st of stars){
+        st.z -= 0.0022 + burst*0.012;
+        if(st.z <= 0) st.z = 1;
+
+        const x = (st.x - 0.5) * (1/st.z) * W + W/2;
+        const y = (st.y - 0.5) * (1/st.z) * H + H/2;
+        const size = st.s * (1/st.z);
+
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.fillRect(x, y, size, size);
+      }
+      ctx.restore();
+      burst *= 0.9;
+
+      // Emojis flotando suave
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for(const e of emojis){
+        e.y += e.vy;
+        if(e.y > 1.12) { e.y = -0.12; e.x = Math.random(); }
+        ctx.globalAlpha = e.a;
+        ctx.font = `${e.s*DPR}px system-ui`;
+        ctx.fillText(e.ch, e.x*W, e.y*H);
+      }
+      ctx.restore();
+
+      // Corazón central
+      const cx = W*0.5, cy = H*0.56;
+      const big = heartPoints(cx, cy, Math.min(W,H)*0.145, 320);
+
+      ctx.save();
+      ctx.strokeStyle = COLOR_CORAZON;
+      ctx.lineWidth = 2.4 * DPR;
+      ctx.shadowColor = COLOR_CORAZON;
+      ctx.shadowBlur = 14 * DPR;
+
+      ctx.beginPath();
+      big.forEach((p, i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+      ctx.closePath();
+      ctx.stroke();
+
+      // Corazones alrededor con apodos
+      const ringR = Math.min(W,H)*0.245;
+      const smallR = Math.min(W,H)*0.058;
+
+      ctx.font = `${12.5*DPR}px system-ui`;
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      for(let i=0;i<APODOS.length;i++){
+        const a = (i/APODOS.length) * Math.PI*2;
+        const x = cx + Math.cos(a)*ringR;
+        const y = cy + Math.sin(a)*ringR*0.68;
+        const pts = heartPoints(x, y, smallR, 140);
+
+        ctx.beginPath();
+        pts.forEach((p, j) => j ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.fillText(APODOS[i], x, y);
+      }
+
+      // Brillitos en el centro
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      for(let i=0;i<28;i++){
+        const rx = (Math.random()-0.5)*44*DPR;
+        const ry = (Math.random()-0.5)*28*DPR;
+        ctx.fillRect(cx+rx, cy+ry, 1.2*DPR, 1.2*DPR);
+      }
+      ctx.restore();
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
