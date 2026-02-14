@@ -1,219 +1,322 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Para Randy 💙</title>
-  <style>
-    html, body { margin:0; height:100%; background:#000; overflow:hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto; }
-    canvas { display:block; }
-    .top {
-      position: fixed; top: 18px; left: 0; right: 0;
-      display:flex; justify-content:center; pointer-events:none;
-      color: rgba(255,255,255,.95);
-      text-shadow: 0 2px 12px rgba(0,0,0,.75);
-      font-size: 18px;
-      padding: 0 14px;
-      text-align:center;
-    }
-    .music {
-      position: fixed; top: 16px; right: 14px;
-      z-index: 10;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.18);
-      color: rgba(255,255,255,.9);
-      padding: 10px 12px;
-      border-radius: 999px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      cursor: pointer;
-      font-size: 13px;
-    }
-    .music:active { transform: scale(.98); }
-    .hint {
-      position: fixed; bottom: 18px; left: 0; right: 0;
-      display:flex; justify-content:center; pointer-events:none;
-      color: rgba(255,255,255,.55);
-      font-size: 12px;
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Para Randy 💙</title>
+
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto}
+  canvas{display:none}
+
+  /* Pantalla inicial */
+  .overlay{
+    position:fixed;inset:0;z-index:30;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    background:#000;color:#fff;text-align:center;padding:0 18px;
+  }
+  .overlay h1{
+    font-size:34px;font-weight:900;letter-spacing:.4px;
+    color:#ff7ad6;
+    text-shadow:0 0 18px rgba(255,122,214,.6),0 0 46px rgba(255,0,170,.25);
+    margin:0 0 14px 0;
+  }
+  .overlay p{opacity:.85;margin:0 0 26px 0}
+  .enter{
+    padding:14px 26px;border-radius:999px;border:none;
+    background:linear-gradient(45deg,#ff3bbd,#7b4dff);
+    color:white;font-size:16px;cursor:pointer;
+    box-shadow:0 0 24px rgba(255,0,170,.45);
+  }
+  .enter:active{transform:scale(.96)}
+  .small{margin-top:14px;font-size:12px;opacity:.55}
+
+  /* Stickers flotando */
+  #stickers{
+    position:fixed;inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:15;
+    display:none; /* se muestra al entrar */
+  }
+  .sticker{
+    position:absolute;
+    opacity:.92;
+    filter: drop-shadow(0 0 10px rgba(255,90,190,.18));
+    animation-name: floatUp;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform;
+  }
+  @keyframes floatUp{
+    from{transform: translateY(110vh) rotate(0deg);}
+    to{transform: translateY(-25vh) rotate(360deg);}
+  }
+
+  /* Texto arriba (tipo video) */
+  .top{
+    position:fixed;top:16px;left:0;right:0;z-index:20;
+    display:flex;justify-content:center;pointer-events:none;
+    font-size:30px;font-weight:900;
+    color:#ff7ad6;
+    text-shadow:0 0 18px rgba(255,122,214,.55), 0 0 40px rgba(255,0,170,.25);
+    padding:0 14px;text-align:center;
+    display:none; /* aparece al entrar */
+  }
+  .sub{
+    position:fixed;top:58px;left:0;right:0;z-index:20;
+    display:flex;justify-content:center;pointer-events:none;
+    color:rgba(255,255,255,.86);
+    text-shadow:0 2px 14px rgba(0,0,0,.85);
+    font-size:13px;padding:0 14px;text-align:center;
+    display:none; /* aparece al entrar */
+  }
+</style>
 </head>
+
 <body>
-  <button class="music" id="musicBtn">Música 🎶</button>
-  <div class="top" id="msg"></div>
-  <div class="hint">toca la pantalla ✨</div>
+  <div class="overlay" id="overlay">
+    <h1>Para Randy 💙</h1>
+    <p>Te amo hasta el infinito y más allá ✨</p>
+    <button class="enter" onclick="startExperience()">Entrar con música 🎶</button>
+    <div class="small">Se abrirá Spotify en otra pestaña (iPhone no deja autoplay con sonido).</div>
+  </div>
+
+  <div class="top" id="titleTop">Feliz San Valentín ❤️</div>
+  <div class="sub" id="subTop">Te amo hasta el infinito y más allá — Para Randy 💙✨</div>
+
+  <div id="stickers"></div>
   <canvas id="c"></canvas>
 
-  <script>
-    // ===== PERSONALIZA AQUÍ =====
-    const NOMBRE = "Randy";
-    const MENSAJE_PRINCIPAL = "Te amo hasta el infinito y más allá 💙✨";
+<script>
+/* ===== PERSONALIZA AQUÍ ===== */
+const TITULO = "Feliz San Valentín ❤️";
+const NOMBRE = "Randy";
+const FRASE  = "Te amo hasta el infinito y más allá";
+const COLOR_GLOW = "#ff3bbd";
+const COLOR_TEXT = "#ff7ad6";
+const SPOTIFY_LINK = "https://open.spotify.com/track/2plbrEY59IikOBgBGLjaoe";
 
-    // Corazón azul brillante (tipo neón)
-    const COLOR_CORAZON = "#2f8dff";
+/* Tu sticker (ya está en el repo) */
+const STICKER_FILE = "IMG_4079.png";
 
-    // Apodos + emojis (como pediste)
-    const APODOS = [
-      "Mi cielo 💫",
-      "Mi infinito ♾️💙",
-      "Mi mundo entero 🌍💙",
-      "Mi niño 🧸💙",
-      "Mi chiquito hermoso 🥺💙",
-      "Mi rey 👑💙",
-      "Mi todo 🫶💙",
-      "Hasta el infinito y más allá 🚀♾️",
-      "Mi desastre fav 😈💙"
-    ];
+/* Cuántos stickers flotando */
+const STICKER_COUNT = 26;
+/* ============================ */
 
-    // Links de música (elige 1 o deja ambos)
-    // Nota: en iPhone/iPad casi siempre exige tocar para abrir/reproducir.
-    const MUSICA_YOUTUBE = "https://www.youtube.com/results?search_query=Die+With+A+Smile+Bruno+Mars+Lady+Gaga";
-    const MUSICA_SPOTIFY = "https://open.spotify.com/search/Die%20With%20A%20Smile%20Bruno%20Mars%20Lady%20Gaga";
-    // ===========================
+document.getElementById("titleTop").textContent = TITULO;
+document.getElementById("subTop").textContent = `${FRASE} — Para ${NOMBRE} 💙✨`;
 
-    // Mensaje arriba
-    document.getElementById("msg").textContent = `${MENSAJE_PRINCIPAL} — Para ${NOMBRE}`;
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+let W,H,DPR;
 
-    // Botón música: abre YouTube (o Spotify)
-    document.getElementById("musicBtn").addEventListener("click", () => {
-      // Cambia MUSICA_YOUTUBE por MUSICA_SPOTIFY si prefieres.
-      window.open(MUSICA_YOUTUBE, "_blank");
-    });
+function resize(){
+  DPR = Math.max(1, Math.min(2, devicePixelRatio||1));
+  W = canvas.width = Math.floor(innerWidth*DPR);
+  H = canvas.height = Math.floor(innerHeight*DPR);
+  canvas.style.width = innerWidth+"px";
+  canvas.style.height = innerHeight+"px";
+}
+addEventListener("resize", resize); resize();
 
-    const canvas = document.getElementById("c");
-    const ctx = canvas.getContext("2d");
-    let W, H, DPR;
+const rnd=(a,b)=>a+Math.random()*(b-a);
 
-    function resize(){
-      DPR = Math.max(1, Math.min(2, devicePixelRatio || 1));
-      W = canvas.width = Math.floor(innerWidth * DPR);
-      H = canvas.height = Math.floor(innerHeight * DPR);
-      canvas.style.width = innerWidth + "px";
-      canvas.style.height = innerHeight + "px";
-    }
-    addEventListener("resize", resize); resize();
+// Efectos
+const TRAIL_ALPHA = 0.16;     // estela blur
+const ROT_SPEED   = 0.22;     // giro piso lento
+const STAR_COUNT  = 1700;
+const DUST_COUNT  = 950;
+const SQUARE_COUNT= 420;
 
-    // Estrellas con profundidad
-    const stars = Array.from({length: 1000}, () => ({
-      x: Math.random(), y: Math.random(),
-      z: Math.random(), s: 0.35 + Math.random()*1.7
-    }));
+const stars = Array.from({length: STAR_COUNT}, ()=>({
+  x: Math.random(), y: Math.random(), z: Math.random(), s: rnd(0.3,1.9)
+}));
 
-    // Emojis flotando (para darle vibra como el ejemplo)
-    const floaties = ["💙","✨","💫","⭐️","🌙","🫶","😽","🦋","🌸","💜","😈","👑","🚀","♾️"];
-    const emojis = Array.from({length: 22}, () => ({
-      ch: floaties[(Math.random()*floaties.length)|0],
-      x: Math.random(), y: Math.random(),
-      vy: 0.0006 + Math.random()*0.0012,
-      s: 12 + Math.random()*18,
-      a: 0.35 + Math.random()*0.35
-    }));
+const dust = Array.from({length: DUST_COUNT}, ()=>({
+  x: Math.random(), y: Math.random(),
+  r: rnd(0.6,1.7), a: rnd(0.08,0.35),
+  ph: rnd(0,Math.PI*2)
+}));
 
-    function heartPoints(cx, cy, r, n=220){
-      const pts = [];
-      for(let i=0;i<n;i++){
-        const t = (i/n) * Math.PI*2;
-        const x = 16*Math.pow(Math.sin(t),3);
-        const y = 13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
-        pts.push({ x: cx + (x/18)*r, y: cy - (y/18)*r });
-      }
-      return pts;
-    }
+const squares = Array.from({length: SQUARE_COUNT}, ()=>({
+  x: Math.random(), y: Math.random(),
+  s: rnd(0.8,2.6), a: rnd(0.08,0.22), vy: rnd(0.0006,0.0022)
+}));
 
-    let burst = 0;
-    addEventListener("pointerdown", () => burst = 1);
+// Textos del piso
+const TEXTOS_PISO = [
+  TITULO, `Para ${NOMBRE}`, FRASE,
+  "Contigo lo es todo", "Amor eterno", "Eres mi corazón",
+  "Mi cielo 💫", "Mi infinito ♾️", "Mi mundo entero 🌍",
+  "Mi niño 🧸", "Mi chiquito hermoso 🥺", "Mi rey 👑",
+  "Mi todo 🫶", "Mi desastre fav 😈"
+];
 
-    function draw(){
-      ctx.clearRect(0,0,W,H);
+// Piso (tiles)
+const tile = [];
+for(let i=0;i<160;i++){
+  tile.push({
+    x: rnd(-1.25,1.25),
+    z: rnd(0.25,3.2),
+    sc: rnd(0.10,0.18),
+    txt: TEXTOS_PISO[(Math.random()*TEXTOS_PISO.length)|0],
+  });
+}
 
-      // Fondo tipo nebulosa
-      const g = ctx.createRadialGradient(W*0.5,H*0.45,0,W*0.5,H*0.45,Math.max(W,H)*0.80);
-      g.addColorStop(0,"rgba(80,40,140,0.14)");
-      g.addColorStop(0.4,"rgba(20,40,90,0.10)");
-      g.addColorStop(1,"rgba(0,0,0,1)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0,0,W,H);
+let T = 0;
+let started = false;
 
-      // Estrellas moviéndose hacia ti
-      ctx.save();
-      ctx.globalAlpha = 0.92;
-      for(const st of stars){
-        st.z -= 0.0022 + burst*0.012;
-        if(st.z <= 0) st.z = 1;
+// Crear stickers flotando
+function createFloatingStickers(){
+  const container = document.getElementById("stickers");
+  container.innerHTML = "";
+  for(let i=0;i<STICKER_COUNT;i++){
+    const img = document.createElement("img");
+    img.src = STICKER_FILE;
+    img.className = "sticker";
+    img.style.left = (Math.random()*100) + "vw";
+    img.style.top  = (Math.random()*100) + "vh";
+    img.style.width = (70 + Math.random()*65) + "px";
+    img.style.animationDuration = (14 + Math.random()*16) + "s";
+    img.style.animationDelay = (-Math.random()*18) + "s";
+    container.appendChild(img);
+  }
+}
 
-        const x = (st.x - 0.5) * (1/st.z) * W + W/2;
-        const y = (st.y - 0.5) * (1/st.z) * H + H/2;
-        const size = st.s * (1/st.z);
+function draw(){
+  T += 0.012;
 
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.fillRect(x, y, size, size);
-      }
-      ctx.restore();
-      burst *= 0.9;
+  // Trail
+  ctx.fillStyle = `rgba(0,0,0,${TRAIL_ALPHA})`;
+  ctx.fillRect(0,0,W,H);
 
-      // Emojis flotando suave
-      ctx.save();
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      for(const e of emojis){
-        e.y += e.vy;
-        if(e.y > 1.12) { e.y = -0.12; e.x = Math.random(); }
-        ctx.globalAlpha = e.a;
-        ctx.font = `${e.s*DPR}px system-ui`;
-        ctx.fillText(e.ch, e.x*W, e.y*H);
-      }
-      ctx.restore();
+  // Nebulosa
+  const g = ctx.createRadialGradient(W*0.5,H*0.45,0,W*0.5,H*0.45,Math.max(W,H)*0.92);
+  g.addColorStop(0,"rgba(140,40,180,0.11)");
+  g.addColorStop(0.42,"rgba(50,70,160,0.06)");
+  g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
 
-      // Corazón central
-      const cx = W*0.5, cy = H*0.56;
-      const big = heartPoints(cx, cy, Math.min(W,H)*0.145, 320);
+  // Polvo estelar
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  for(const d of dust){
+    const tw = (Math.sin(T*2 + d.ph)*0.5+0.5);
+    const a = d.a * (0.45 + tw*0.85);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "rgba(255,255,255,1)";
+    ctx.fillRect(d.x*W, d.y*H, d.r*DPR, d.r*DPR);
+  }
+  ctx.restore();
 
-      ctx.save();
-      ctx.strokeStyle = COLOR_CORAZON;
-      ctx.lineWidth = 2.4 * DPR;
-      ctx.shadowColor = COLOR_CORAZON;
-      ctx.shadowBlur = 14 * DPR;
+  // Estrellas profundidad
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  for(const st of stars){
+    st.z -= 0.0022;
+    if(st.z<=0) st.z = 1;
+    const x = (st.x-0.5)*(1/st.z)*W + W/2;
+    const y = (st.y-0.5)*(1/st.z)*H + H/2;
+    const size = st.s*(1/st.z);
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.fillRect(x,y,size,size);
+  }
+  ctx.restore();
 
-      ctx.beginPath();
-      big.forEach((p, i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
-      ctx.closePath();
-      ctx.stroke();
+  // Cuadritos nieve
+  ctx.save();
+  for(const q of squares){
+    q.y += q.vy;
+    if(q.y>1.12){ q.y=-0.12; q.x=Math.random(); }
+    ctx.globalAlpha = q.a;
+    ctx.fillStyle="rgba(255,255,255,1)";
+    ctx.fillRect(q.x*W, q.y*H, q.s*DPR, q.s*DPR);
+  }
+  ctx.restore();
 
-      // Corazones alrededor con apodos
-      const ringR = Math.min(W,H)*0.245;
-      const smallR = Math.min(W,H)*0.058;
+  // Piso rotando
+  const cx=W*0.5, cy=H*0.72;
+  const yaw = T*ROT_SPEED;
+  const fov = 560*DPR;
 
-      ctx.font = `${12.5*DPR}px system-ui`;
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+  for(const it of tile){
+    const x0 = it.x, z0 = it.z;
 
-      for(let i=0;i<APODOS.length;i++){
-        const a = (i/APODOS.length) * Math.PI*2;
-        const x = cx + Math.cos(a)*ringR;
-        const y = cy + Math.sin(a)*ringR*0.68;
-        const pts = heartPoints(x, y, smallR, 140);
+    const xr = x0*Math.cos(yaw) - z0*Math.sin(yaw);
+    const zr = x0*Math.sin(yaw) + z0*Math.cos(yaw);
 
-        ctx.beginPath();
-        pts.forEach((p, j) => j ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
-        ctx.closePath();
-        ctx.stroke();
+    const depth = zr + 2.25;
+    const px = cx + (xr*fov)/(depth*8.5);
+    const py = cy + (1.0*fov)/(depth*10.5);
 
-        ctx.fillText(APODOS[i], x, y);
-      }
+    const scale = (it.sc*fov)/(depth*6.0);
+    const alpha = Math.max(0, 1.15 - depth/3.6);
 
-      // Brillitos en el centro
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      for(let i=0;i<28;i++){
-        const rx = (Math.random()-0.5)*44*DPR;
-        const ry = (Math.random()-0.5)*28*DPR;
-        ctx.fillRect(cx+rx, cy+ry, 1.2*DPR, 1.2*DPR);
-      }
-      ctx.restore();
+    // glow piso
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.14*alpha;
+    ctx.fillStyle = COLOR_GLOW;
+    ctx.beginPath();
+    ctx.ellipse(px, py+12*DPR, 38*scale, 12*scale, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
 
-      requestAnimationFrame(draw);
-    }
-    draw();
-  </script>
+    // texto
+    ctx.globalAlpha = 0.80*alpha;
+    ctx.font = `${Math.max(10, 18*scale)}px system-ui`;
+    ctx.fillStyle = COLOR_TEXT;
+    ctx.fillText(it.txt, px - 60*scale, py - 40*scale);
+  }
+
+  // Aro brillante rosa
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.shadowColor = COLOR_GLOW;
+  ctx.shadowBlur = 34*DPR;
+
+  const ringR = Math.min(W,H)*0.15;
+  const ringY = H*0.62;
+
+  ctx.strokeStyle = COLOR_GLOW;
+  ctx.lineWidth = 10*DPR;
+  ctx.beginPath();
+  ctx.ellipse(W*0.5, ringY, ringR*1.65, ringR*0.55, 0, 0, Math.PI*2);
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 22*DPR;
+  ctx.beginPath();
+  ctx.ellipse(W*0.5, ringY, ringR*1.35, ringR*0.45, 0, 0, Math.PI*2);
+  ctx.stroke();
+
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+
+function startExperience(){
+  if(started) return;
+  started = true;
+
+  document.getElementById("overlay").style.display="none";
+  document.getElementById("stickers").style.display="block";
+  document.getElementById("titleTop").style.display="flex";
+  document.getElementById("subTop").style.display="flex";
+
+  canvas.style.display="block";
+
+  createFloatingStickers();
+
+  // abrir música
+  window.open(SPOTIFY_LINK, "_blank");
+
+  ctx.fillStyle="rgba(0,0,0,1)";
+  ctx.fillRect(0,0,W,H);
+  draw();
+}
+</script>
 </body>
 </html>
